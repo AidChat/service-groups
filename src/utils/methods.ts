@@ -1,3 +1,5 @@
+import * as crypto from "crypto";
+
 const jwt = require('jsonwebtoken');
 const hasherObj: {
     hash: string | null,
@@ -6,7 +8,8 @@ const hasherObj: {
     expiry:string,
     _hash : (s:string) => string,
     _verify : (k:string) => Promise<unknown>,
-    key:string | undefined
+    key:string | undefined,
+    _generateId:(i:string)=> string
 } = {
     hash: null,
     expiry : '4h',
@@ -34,6 +37,9 @@ const hasherObj: {
         return jwt.sign({
             data: str
         }, this.key);
+    },
+    _generateId : function(){
+        return crypto.randomBytes(16).toString("hex");
     }
 }
 export const hasher = Object.create(hasherObj);

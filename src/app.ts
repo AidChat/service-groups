@@ -8,9 +8,8 @@ app.use(server.json());
 dotenv.config();
 const port = process.env.PORT;
 
-console.log(process.env.KEY)
 app.use(config._urlParser('/group'), groupRouter);
 app.listen(port, () => {
-    console.log('Group-Service is running  💥')
+    console.log(port,'Group-Service is running  💥')
 })
 
