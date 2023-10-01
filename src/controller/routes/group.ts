@@ -78,7 +78,7 @@ export function getAllGroupsController(request: Request, response: Response) {
                 id: true,
                 updated_at: true,
                 name: true,
-                socket: true,
+                Socket: true,
                 GroupDetail: true,
 
             },
