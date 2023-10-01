@@ -17,7 +17,7 @@ model Group {
   GroupDetail   GroupDetail @relation(fields: groupDetailId, references: id)
   User          User[]
   socketId      Int         @unique()
-  Socket        Socket      @relation(fields: [socketId], references: [id])
+  Socket        Socket      @relation(fields: socketId, references: id)
 }
 
 model GroupDetail {
@@ -39,7 +39,6 @@ model Socket {
   id        Int    @id @default(autoincrement())
   socket_id String
   Group     Group?
-  groupId   Int
 }
 
 model User {

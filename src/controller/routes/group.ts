@@ -33,18 +33,20 @@ export function addGroupController(request: Request, response: Response) {
                             tags: group.keywords
                         }
                     },
-                    socket: {
+                    Socket: {
                         create: {
                             socket_id: socketId
                         }
                     }
                 },
                 include: {
-                    GroupDetail: true
+                    GroupDetail: true,
+                    Socket:true
                 }
             }).then((result: any) => {
                 responseHandler(200, response, {data: result})
             }).catch((error: any) => {
+                console.log(error)
                 responseHandler(503, response, {message: "Please try again later"})
             })
         }).catch((reason: any) => {
