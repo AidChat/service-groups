@@ -3,7 +3,7 @@ import {verifyClient} from "../middleware/client-validation";
 import {
     addGroupController,
     deleteGroup,
-    getAllGroupsController,
+    getAllGroups,
     getGroup,
     updateGroup
 } from "../controller/routes/group";
@@ -11,7 +11,7 @@ const groupRouter = route.Router();
 
 groupRouter.route('/')
     .post(verifyClient,addGroupController)
-    .get(verifyClient,getAllGroupsController)
+    .get(verifyClient,getAllGroups)
 
 groupRouter.route('/:id')
     .get(verifyClient,getGroup)

@@ -26,7 +26,11 @@ export function addGroupController(request: Request, response: Response) {
             config._query.group.create({
                 data: {
                     name: group.name,
-                    userId: [user.id],
+                    User:{
+                        connect:{
+                            id:user.id
+                        }
+                    },
                     GroupDetail: {
                         create: {
                             description: group.description,
@@ -41,7 +45,7 @@ export function addGroupController(request: Request, response: Response) {
                 },
                 include: {
                     GroupDetail: true,
-                    Socket:true
+                    Socket: true
                 }
             }).then((result: any) => {
                 responseHandler(200, response, {data: result})
@@ -50,6 +54,7 @@ export function addGroupController(request: Request, response: Response) {
                 responseHandler(503, response, {message: "Please try again later"})
             })
         }).catch((reason: any) => {
+            console.log(reason);
             responseHandler(403, response, {message: "Try again later"})
         })
     } catch (e: any) {
@@ -62,7 +67,7 @@ export function addGroupController(request: Request, response: Response) {
  * @param request
  * @param response
  */
-export function getAllGroupsController(request: Request, response: Response) {
+export function getAllGroups(request: Request, response: Response) {
     try {
         let user = request.body.user.email;
         config._query.group.findMany({
@@ -80,7 +85,6 @@ export function getAllGroupsController(request: Request, response: Response) {
                 name: true,
                 Socket: true,
                 GroupDetail: true,
-
             },
 
         }).then((result: any) => {
@@ -155,7 +159,7 @@ export function deleteGroup(request: Request, response: Response) {
 export function updateGroup(request: Request, response: Response) {
     try {
         let gid: Number = Number(request.params.id);
-        let {id, name, description, keywords} = request.body;
+        let {id, name, description, GroupDetail} = request.body;
         if (!id) {
             return responseHandler(400, response, {message: 'Group not found'});
         }
@@ -164,14 +168,16 @@ export function updateGroup(request: Request, response: Response) {
             return responseHandler(404, response, {message: "Group not found"})
         }
         let updatedData = {
-            name, description, keywords
+            name, description
         }
         config._query.group.update({
             where: {
                 id: gid
             },
-            data: updatedData
-
+            data: updatedData,
+            include: {
+                GroupDetail: true
+            }
         }).then((result: any) => {
             responseHandler(200, response, {data: result});
         }).catch((reason: any) => {
