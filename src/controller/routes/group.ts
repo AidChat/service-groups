@@ -26,9 +26,9 @@ export function addGroupController(request: Request, response: Response) {
             config._query.group.create({
                 data: {
                     name: group.name,
-                    User:{
-                        connect:{
-                            id:user.id
+                    User: {
+                        connect: {
+                            id: user.id
                         }
                     },
                     GroupDetail: {
@@ -85,6 +85,7 @@ export function getAllGroups(request: Request, response: Response) {
                 name: true,
                 Socket: true,
                 GroupDetail: true,
+                Message:true
             },
 
         }).then((result: any) => {
@@ -186,5 +187,38 @@ export function updateGroup(request: Request, response: Response) {
         })
     } catch (e) {
         responseHandler(503, response, {message: "Please try again"})
+    }
+}
+
+export function messages(request: Request, response: Response) {
+    try {
+        let {email} = request.body.user;
+        let group: string | number = request.params.groupId;
+        group = Number(group);
+        config._query.message.findMany({
+            where: {
+                Group: {
+                    is: {
+                        id: group,
+                        User: {
+                            every: {
+                                email
+                            }
+                        }
+                    }
+                }
+            },
+            include:{
+                MessageContent:true
+            }
+        }).then((result: any) => {
+            responseHandler(200, response, {data: result});
+        }).catch((error: any) => {
+            console.log(error);
+            responseHandler(503, response, {message: "Please try again later"})
+        })
+    } catch (e) {
+        console.log(e);
+        responseHandler(503, response, {message: "Please try again later"})
     }
 }
