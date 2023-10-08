@@ -73,19 +73,17 @@ export function getAllGroups(request: Request, response: Response) {
         config._query.group.findMany({
             where: {
                 User: {
-                    every: {
+                    some: {
                         email: user
                     }
                 }
             },
-            select: {
-                $scalar: false,
-                id: true,
-                updated_at: true,
-                name: true,
-                Socket: true,
+            orderBy:{
+                created_at:'asc'
+            },
+            include: {
                 GroupDetail: true,
-                Message:true
+                User:true
             },
 
         }).then((result: any) => {
@@ -109,23 +107,29 @@ export function getAllGroups(request: Request, response: Response) {
 export function getGroup(request: Request, response: Response) {
     try {
         let id: string = request.params.id;
-        let gId = Number(id);
+        let gId : number = Number(id);
         let user = request.body.user;
         config._query.group.findUnique({
             where: {
                 id: gId,
                 User: {
-                    every: {
+                     some: {
                         email: user.email
                     }
                 }
             },
             include: {
                 GroupDetail: true,
+                Socket:true,
+                User:{
+                    select:{
+                        name:true,
+                        email:true
+                    }
+                }
             }
 
         }).then((result: any) => {
-            if (!result) result = [];
             responseHandler(200, response, {data: result})
         })
             .catch((reason: any) => {
