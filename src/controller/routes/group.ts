@@ -83,7 +83,8 @@ export function getAllGroups(request: Request, response: Response) {
             },
             include: {
                 GroupDetail: true,
-                User:true
+                User:true,
+                Socket:true
             },
 
         }).then((result: any) => {
@@ -205,7 +206,7 @@ export function messages(request: Request, response: Response) {
                     is: {
                         id: group,
                         User: {
-                            every: {
+                            some: {
                                 email
                             }
                         }
