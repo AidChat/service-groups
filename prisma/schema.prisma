@@ -18,6 +18,7 @@ model Group {
   GroupDetail   GroupDetail @relation(fields: [groupDetailId], references: [id])
   Socket        Socket      @relation(fields: [socketId], references: [id])
   Message       Message[]
+  Request       Request[]
   User          User[]      @relation("GroupToUser")
 }
 
@@ -48,9 +49,21 @@ model User {
   name      String
   password  String
   sessionId Int?
+  role      Role      @default(MEMBER)
   Message   Message[]
+  Request   Request[]
   Session   Session?
   Group     Group[]   @relation("GroupToUser")
+}
+
+model Request {
+  id      Int         @unique
+  groupId Int
+  userId  Int
+  type    RequestType @default(INVITE)
+  invitee String
+  group   Group       @relation(fields: [groupId], references: [id])
+  user    User        @relation(fields: [userId], references: [id])
 }
 
 model Message {
@@ -71,6 +84,17 @@ model MessageContent {
   content String
   caption String?
   Message Message[]
+}
+
+enum RequestType {
+  INVITE
+  MANUAL
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
 }
 
 enum GroupTokens {
@@ -171,6 +195,7 @@ enum GroupTokens {
   DIVERSITY
   INCLUSION
   SUSTAINABILITY
+  PRIVATE
 }
 
 enum MESSAGE_CONTENT_TYPE {

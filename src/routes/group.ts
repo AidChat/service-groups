@@ -1,10 +1,10 @@
 import route from 'express';
 import {verifyClient} from "../middleware/client-validation";
 import {
-    addGroupController,
+    addGroupController, addUserToGroup, createRequest,
     deleteGroup,
-    getAllGroups,
-    getGroup, messages,
+    getAllGroups, getAllRequests,
+    getGroup, GroupMembers, messages, removeRequest,
     updateGroup
 } from "../controller/routes/group";
 const groupRouter = route.Router();
@@ -21,5 +21,16 @@ groupRouter.route('/:id')
 
 groupRouter.route('/messages/:groupId')
     .get(verifyClient,messages)
+
+groupRouter.route('/users/:id')
+    .put(verifyClient,addUserToGroup)
+    .get(verifyClient,GroupMembers)
+
+groupRouter.route('/invite/:groupId')
+    .post(verifyClient,createRequest)
+    .get(verifyClient,getAllRequests)
+
+groupRouter.route('/invite/:inviteId')
+    .delete(verifyClient,removeRequest)
 
 export default groupRouter
