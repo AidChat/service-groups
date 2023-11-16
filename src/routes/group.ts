@@ -5,7 +5,7 @@ import {
     deleteGroup,
     getAllGroups, getAllRequests,
     getGroup, GroupMembers, messages, removeRequest,
-    updateGroup
+    updateGroup,getRequest
 } from "../controller/routes/group";
 const groupRouter = route.Router();
 
@@ -33,4 +33,7 @@ groupRouter.route('/invite/:groupId')
 groupRouter.route('/invite/:inviteId')
     .delete(verifyClient,removeRequest)
 
+
+groupRouter.route('/request/:id')
+    .get(getRequest)
 export default groupRouter

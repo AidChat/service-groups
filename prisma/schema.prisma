@@ -19,6 +19,7 @@ model Group {
   Socket        Socket      @relation(fields: [socketId], references: [id])
   Message       Message[]
   Request       Request[]
+  Role          Role[]
   User          User[]      @relation("GroupToUser")
 }
 
@@ -49,19 +50,29 @@ model User {
   name      String
   password  String
   sessionId Int?
-  role      Role      @default(MEMBER)
   Message   Message[]
   Request   Request[]
+  Role      Role[]
   Session   Session?
   Group     Group[]   @relation("GroupToUser")
 }
 
+model Role {
+  id      Int      @id @default(autoincrement())
+  type    RoleType @default(MEMBER)
+  userId  Int
+  groupId Int
+  group   Group    @relation(fields: [groupId], references: [id])
+  user    User     @relation(fields: [userId], references: [id])
+}
+
 model Request {
-  id      Int         @unique
+  id      String      @unique
   groupId Int
   userId  Int
   type    RequestType @default(INVITE)
   invitee String
+  role    RoleType    @default(MEMBER)
   group   Group       @relation(fields: [groupId], references: [id])
   user    User        @relation(fields: [userId], references: [id])
 }
@@ -86,15 +97,15 @@ model MessageContent {
   Message Message[]
 }
 
+enum RoleType {
+  ADMIN
+  OWNER
+  MEMBER
+}
+
 enum RequestType {
   INVITE
   MANUAL
-}
-
-enum Role {
-  OWNER
-  ADMIN
-  MEMBER
 }
 
 enum GroupTokens {
