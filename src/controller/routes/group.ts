@@ -3,7 +3,7 @@ import {responseHandler} from "../../utils/response-handler";
 import {config} from "../../utils/appConfig";
 import {groupReqInt} from "../../utils/interface";
 import {hasher} from "../../utils/methods";
-import {Group, RequestType} from "@prisma/client";
+import {Group, MESSAGE_SATUS, RequestType} from "@prisma/client";
 import {sendEmail} from "../../utils/mailer";
 import {isValidEmail} from "../../utils/common";
 import { v4 as uuidv4 } from 'uuid';
@@ -114,8 +114,13 @@ export function getAllGroups(request: Request, response: Response) {
             include: {
                 GroupDetail: true,
                 User: true,
-                Socket: true
-            },
+                Socket: true,
+                Message:{
+                    where:{
+                        status:MESSAGE_SATUS.DELIVERED
+                    }
+                }
+            }
 
         }).then((result: any) => {
             responseHandler(200, response, {data: result})
@@ -155,7 +160,8 @@ export function getGroup(request: Request, response: Response) {
                 User: {
                     select: {
                         name: true,
-                        email: true
+                        email: true,
+                        profileImage:true
                     }
                 },
                 Role:{
@@ -254,7 +260,8 @@ export function messages(request: Request, response: Response) {
                 MessageContent: true,
                 User: {
                     select: {
-                        name: true
+                        name: true,
+                        profileImage:true
                     }
                 }
             }
@@ -272,10 +279,54 @@ export function messages(request: Request, response: Response) {
 
 export function addUserToGroup(request: Request, response: Response) {
     try {
-        const groupId: string = request.params.id;
-        const user_id: string = request.body.User.id;
-    } catch (e) {
+        const email: string = request.body.user.email;
+        const requestId : string =  request.params.id;
+        config._query.user.findFirst({where:{email:email}})
+            .then((result:any)=>{
+                if(result){
+                    if (requestId) {
+                        config._query.request.findFirst({where: {id: requestId}})
+                            .then((res: any) => {
+                                if (res ) {
+                                    config._query.group.update({
+                                        where: {id: res.groupId},
+                                        data: {User: {connect: result}},
+                                        include: {User: true}
+                                    })
+                                        .then((groupUpdate: any) => {
+                                            config._query.request.delete({where: {id: res.id}})
+                                                .then(() => {
+                                                    config._query.role.create({
+                                                        data: {
 
+                                                            userId: result.id,
+                                                            groupId: groupUpdate.id
+                                                        }
+                                                    })
+                                                        .then(() => {
+                                                            responseHandler(200, response, {});
+                                                        })
+                                                })
+                                        })
+                                        .catch((error: any) => {
+                                            console.log(error)
+                                            responseHandler(200, response, {});
+                                        })
+                                } else {
+                                    responseHandler(200, response, {data: {}});
+                                }
+                            })
+                            .catch((e: any) => {
+                                console.log(e);
+                                responseHandler(200, response, {});
+                            })
+                    }
+                }
+            })
+
+    } catch (e) {
+        console.log(e)
+           responseHandler(503,response,{message:"Please try again"});
     }
 }
 

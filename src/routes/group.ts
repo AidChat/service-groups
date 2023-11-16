@@ -36,4 +36,5 @@ groupRouter.route('/invite/:inviteId')
 
 groupRouter.route('/request/:id')
     .get(getRequest)
+    .put(verifyClient,addUserToGroup)
 export default groupRouter
