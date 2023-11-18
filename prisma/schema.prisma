@@ -28,6 +28,7 @@ model GroupDetail {
   description String
   tags        GroupTokens[]
   Group       Group?
+  icon        String        @default("")
 }
 
 model Session {
@@ -107,6 +108,7 @@ enum RoleType {
 enum RequestType {
   INVITE
   MANUAL
+  DELETE
 }
 
 enum GroupTokens {
