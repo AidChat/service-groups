@@ -7,6 +7,7 @@ import {Group, MESSAGE_SATUS, RequestType} from "@prisma/client";
 import {sendEmail} from "../../utils/mailer";
 import {imageUpload, isValidEmail} from "../../utils/common";
 import {v4 as uuidv4} from 'uuid';
+import group from "../../routes/group";
 
 export function addGroupController(request: Request, response: Response) {
     try {
@@ -157,11 +158,22 @@ export function getGroup(request: Request, response: Response) {
         config._query.group.findUnique({
             where: {
                 id: gId,
+                // OR: [{
                 User: {
                     some: {
                         email: user.email
                     }
-                }
+                },
+                // Request: {
+                //     some: {
+                //         groupId: gId,
+                //         user: {
+                //             email: user.email
+                //         }
+                //     }
+                // }
+
+                // }],
             },
             include: {
                 GroupDetail: true,
@@ -189,7 +201,6 @@ export function getGroup(request: Request, response: Response) {
                     }
                 }
             }
-
         }).then((result: any) => {
             responseHandler(200, response, {data: result})
         })
@@ -197,7 +208,8 @@ export function getGroup(request: Request, response: Response) {
                 console.log(reason)
                 responseHandler(503, response, {message: 'Please try again later'});
             })
-    } catch (reason: any) {
+    } catch
+        (reason: any) {
         console.log(reason);
         responseHandler(503, response, {message: "Please try again after sometime"})
     }
@@ -319,6 +331,9 @@ export function updateGroup(request: Request, response: Response) {
 export function messages(request: Request, response: Response) {
     try {
         let {email} = request.body.user;
+        let {start, limit} = request.body;
+        limit = Number(limit)
+        const startDate = new Date(start);
         let group: string | number = request.params.groupId;
         group = Number(group);
         config._query.message.findMany({
@@ -332,14 +347,22 @@ export function messages(request: Request, response: Response) {
                             }
                         }
                     }
+                },
+                created_at: {
+                    lt: startDate
                 }
+            },
+            take: limit,
+            orderBy: {
+                created_at: 'desc'
             },
             include: {
                 MessageContent: true,
                 User: {
                     select: {
                         name: true,
-                        profileImage: true
+                        profileImage: true,
+                        id: true
                     }
                 }
             }
@@ -456,66 +479,78 @@ export function createRequest(request: Request, response: Response) {
         const requestee = request.body.requestee;
         let link = process.env.CLIENT_LOCAL + id;
         const role = request.body.role;
-        config._query.user.findFirst({where: {email: requester, Group: {some: {id: groupId}}}, include: {Group: true}})
+        config._query.group.findFirst({where: {User: {some: {email: requestee}}, id: groupId}})
             .then((result: any) => {
+                console.log(result)
                 if (!result) {
-                    return responseHandler(403, response, {message: "Suspecious!!!"});
-                }
-                config._query.request.findFirst({
-                    where: {
-                        invitee: requestee,
-                        groupId: groupId
-                    }
-                })
-                    .then((req: any) => {
-                        if (req) {
-                            responseHandler(200, response, {message: "Request is already sent"})
-                        } else {
-                            const groups = result.Group;
-                            let allowed = false;
-                            groups.forEach((group: Group) => {
-                                if (group.id === groupId) {
-                                    allowed = true
+                    config._query.user.findFirst({
+                        where: {email: requester, Group: {some: {id: groupId}}},
+                        include: {Group: true}
+                    })
+                        .then((result: any) => {
+                            if (!result) {
+                                return responseHandler(403, response, {message: "Suspecious!!!"});
+                            }
+                            config._query.request.findFirst({
+                                where: {
+                                    invitee: requestee,
+                                    groupId: groupId
                                 }
                             })
-                            if (allowed) {
-                                const userId = result.id;
-
-                                sendEmail({link, email: requestee}).then(() => {
-                                    config._query.request.create({
-                                        data: {
-                                            id,
-                                            groupId,
-                                            userId,
-                                            type: RequestType.INVITE,
-                                            invitee: requestee,
-                                            role: role
-                                        }
-                                    })
-                                        .then((result: any) => {
-                                            responseHandler(200, response, {
-                                                data: result,
-                                                message: result.invitee + " has been requested to join your group"
-                                            });
+                                .then((req: any) => {
+                                    if (req) {
+                                        responseHandler(200, response, {message: "Request is already sent"})
+                                    } else {
+                                        const groups = result.Group;
+                                        let allowed = false;
+                                        groups.forEach((group: Group) => {
+                                            if (group.id === groupId) {
+                                                allowed = true
+                                            }
                                         })
+                                        if (allowed) {
+                                            const userId = result.id;
+
+                                            sendEmail({link, email: requestee}).then(() => {
+                                                config._query.request.create({
+                                                    data: {
+                                                        id,
+                                                        groupId,
+                                                        userId,
+                                                        type: RequestType.INVITE,
+                                                        invitee: requestee,
+                                                        role: role
+                                                    }
+                                                })
+                                                    .then((result: any) => {
+                                                        responseHandler(200, response, {
+                                                            data: result,
+                                                            message: result.invitee + " has been requested to join your group"
+                                                        });
+                                                    })
+                                            })
+                                                .catch((reason) => {
+                                                    console.log(reason);
+                                                    responseHandler(301, response, {message: "Failed to create request"});
+                                                })
+                                        } else {
+                                            responseHandler(403, response, {message: "Suspecious!!!"})
+                                        }
+                                    }
                                 })
-                                    .catch((reason) => {
-                                        console.log(reason);
-                                        responseHandler(301, response, {message: "Failed to create request"});
-                                    })
-                            } else {
-                                responseHandler(403, response, {message: "Suspecious!!!"})
-                            }
-                        }
-                    })
 
 
+                        })
+                        .catch((error: any) => {
+                            console.log(error)
+                            responseHandler(404, response, {message: "Not found"});
+                        })
+
+
+                } else {
+                    responseHandler(200, response, {message: "User already exists!"})
+                }
             })
-            .catch((error: any) => {
-                console.log(error)
-                responseHandler(404, response, {message: "Not found"});
-            })
-
 
     } catch (e) {
         console.log(e)
@@ -587,5 +622,98 @@ export function getRequest(request: Request, response: Response) {
         }
     } catch (e) {
         responseHandler(503, response, {message: "Please try again"})
+    }
+}
+
+export function getRequestByUser(request: Request, response: Response) {
+    try {
+        let email = request.body.user.email;
+        config._query.user.findFirst({where: {email: email}})
+            .then((res: any) => {
+                config._query.request.findMany({
+                    where: {invitee: res.email, status:{in : [ 'PENDING','BLOCKED']}},
+                    include: {group: {include: {GroupDetail: true}}}
+                })
+                    .then((result: any) => {
+                        responseHandler(200, response, {data: result});
+                    })
+                    .catch((error: any) => {
+                        console.log(error);
+                        responseHandler(304, response, {message: "Please try again later!"})
+                    })
+            })
+            .catch((e: any) => {
+                console.log(e);
+                responseHandler(404, response, {message: "User not found"});
+            })
+    } catch (e) {
+        console.log(e)
+        responseHandler(503, response, {message: "Please try again later!"});
+    }
+}
+
+
+export function getRole(request: Request, response: Response) {
+    try {
+        let groupId = Number(request.params.id);
+        let userEmail = request.body.user.email;
+        config._query.role.findFirst({where: {groupId: groupId, user: {email: userEmail}}})
+            .then((result: any) => {
+                responseHandler(200, response, {data: result});
+            })
+            .catch((error: any) => {
+                responseHandler(200, response, {message: "Please try again later"});
+            })
+    } catch (e) {
+        responseHandler(503, response, {data: "Please try again later"})
+    }
+}
+
+export function removeUserFromGroup(request: Request, response: Response) {
+    try {
+        let groupId = Number(request.params.id);
+        let userEmail = request.body.user.email;
+        config._query.user.findFirst({where: {email: userEmail}})
+            .then((result: any) => {
+                config._query.group.update({
+                    where: {id: groupId},
+                    data: {
+                        User: {
+                            disconnect: {
+                                id: result.id
+                            }
+                        }
+                    }
+                })
+                    .then((result: any) => {
+                        responseHandler(200, response, {message: "Success"})
+                    })
+                    .catch((error: any) => {
+                        responseHandler(304, response, {message: "Please try again later"})
+                    })
+            })
+            .catch((error: any) => {
+                console.log(error)
+            })
+
+    } catch (e) {
+        responseHandler(503, response, {message: "Please try again later"});
+    }
+}
+
+export function updateRequestStatus(request: Request, response: Response) {
+    try {
+        let requestId = request.params.id;
+        let userEmail = request.body.user.email;
+        let {status} = request.body;
+        config._query.request.update({where: {id: requestId, invitee: userEmail}, data: {status: status}})
+            .then((res: any) => {
+                responseHandler(200, response, {message: "Invitation rejected"})
+            })
+            .catch((error: any) => {
+                responseHandler(403, response, {message: "Please try again later"})
+            })
+    } catch (e) {
+        responseHandler(503, response, {message: "Please try again later"})
     }
 }

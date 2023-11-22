@@ -69,14 +69,23 @@ model Role {
 }
 
 model Request {
-  id      String      @unique
+  id      String        @unique
   groupId Int
   userId  Int
-  type    RequestType @default(INVITE)
+  message String        @default("")
+  type    RequestType   @default(INVITE)
   invitee String
-  role    RoleType    @default(MEMBER)
-  group   Group       @relation(fields: [groupId], references: [id])
-  user    User        @relation(fields: [userId], references: [id])
+  role    RoleType      @default(MEMBER)
+  group   Group         @relation(fields: [groupId], references: [id])
+  user    User          @relation(fields: [userId], references: [id])
+  status  RequestStatus @default(PENDING)
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  BLOCKED
 }
 
 model Message {

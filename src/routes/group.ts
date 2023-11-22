@@ -1,41 +1,64 @@
 import route from 'express';
 import {verifyClient} from "../middleware/client-validation";
 import {
-    addGroupController, addUserToGroup, createRequest,
+    addGroupController,
+    addUserToGroup,
+    createRequest,
     deleteGroup,
-    getAllGroups, getAllRequests,
-    getGroup, GroupMembers, messages, removeRequest,
-    updateGroup, getRequest, createGroupDeleteRequest
+    getAllGroups,
+    getAllRequests,
+    getGroup,
+    GroupMembers,
+    messages,
+    removeRequest,
+    updateGroup,
+    getRequest,
+    createGroupDeleteRequest,
+    getRole,
+    removeUserFromGroup,
+    getRequestByUser,
+    updateRequestStatus
 } from "../controller/routes/group";
+
 const groupRouter = route.Router();
 
 groupRouter.route('/')
-    .post(verifyClient,addGroupController)
-    .get(verifyClient,getAllGroups)
+    .post(verifyClient, addGroupController)
+    .get(verifyClient, getAllGroups)
+
+groupRouter.route('/requests/')
+    .get(verifyClient, getRequestByUser)
 
 groupRouter.route('/:id')
-    .get(verifyClient,getGroup)
-    .delete(verifyClient,deleteGroup)
-    .put(verifyClient,updateGroup)
-    .post(verifyClient,createGroupDeleteRequest)
-
+    .get(verifyClient, getGroup)
+    .delete(verifyClient, deleteGroup)
+    .put(verifyClient, updateGroup)
+    .post(verifyClient, createGroupDeleteRequest)
 
 groupRouter.route('/messages/:groupId')
-    .get(verifyClient,messages)
+    .post(verifyClient, messages)
 
 groupRouter.route('/users/:id')
-    .put(verifyClient,addUserToGroup)
-    .get(verifyClient,GroupMembers)
+    .put(verifyClient, addUserToGroup)
+    .get(verifyClient, GroupMembers)
 
 groupRouter.route('/invite/:groupId')
-    .post(verifyClient,createRequest)
-    .get(verifyClient,getAllRequests)
+    .post(verifyClient, createRequest)
+    .get(verifyClient, getAllRequests)
 
 groupRouter.route('/invite/:id')
-    .delete(verifyClient,removeRequest)
-
+    .delete(verifyClient, removeRequest)
+    .put(verifyClient,updateRequestStatus)
 
 groupRouter.route('/request/:id')
     .get(getRequest)
-    .put(verifyClient,addUserToGroup)
+    .put(verifyClient, addUserToGroup)
+
+groupRouter.route('/role/:id')
+    .get(verifyClient, getRole)
+
+groupRouter.route('/remove/:id')
+    .put(verifyClient, removeUserFromGroup)
+
+
 export default groupRouter
