@@ -17,23 +17,18 @@ import {
     getRole,
     removeUserFromGroup,
     getRequestByUser,
-    updateRequestStatus
+    updateRequestStatus, getGroupByName
 } from "../controller/routes/group";
 
 const groupRouter = route.Router();
 
-groupRouter.route('/')
-    .post(verifyClient, addGroupController)
-    .get(verifyClient, getAllGroups)
 
-groupRouter.route('/requests/')
+groupRouter.route('/requests')
     .get(verifyClient, getRequestByUser)
 
-groupRouter.route('/:id')
-    .get(verifyClient, getGroup)
-    .delete(verifyClient, deleteGroup)
-    .put(verifyClient, updateGroup)
-    .post(verifyClient, createGroupDeleteRequest)
+groupRouter.route('/search')
+    .post(verifyClient,getGroupByName)
+
 
 groupRouter.route('/messages/:groupId')
     .post(verifyClient, messages)
@@ -60,5 +55,14 @@ groupRouter.route('/role/:id')
 groupRouter.route('/remove/:id')
     .put(verifyClient, removeUserFromGroup)
 
+groupRouter.route('/GET/:id')
+    .get(verifyClient, getGroup)
+    .delete(verifyClient, deleteGroup)
+    .put(verifyClient, updateGroup)
+    .post(verifyClient, createGroupDeleteRequest)
+
+groupRouter.route('/')
+    .post(verifyClient, addGroupController)
+    .get(verifyClient, getAllGroups)
 
 export default groupRouter
