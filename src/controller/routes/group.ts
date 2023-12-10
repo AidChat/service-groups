@@ -3,11 +3,10 @@ import {responseHandler} from "../../utils/response-handler";
 import {config} from "../../utils/appConfig";
 import {groupReqInt} from "../../utils/interface";
 import {hasher} from "../../utils/methods";
-import {Group, MESSAGE_SATUS, RequestType, User} from "@prisma/client";
+import {Group, RequestType, User} from "@prisma/client";
 import {sendEmail} from "../../utils/mailer";
 import {imageUpload, isValidEmail} from "../../utils/common";
 import {v4 as uuidv4} from 'uuid';
-import group from "../../routes/group";
 
 export function addGroupController(request: Request, response: Response) {
     try {
@@ -127,7 +126,15 @@ export function getAllGroups(request: Request, response: Response) {
                 Socket: true,
                 Message: {
                     where: {
-                        status: MESSAGE_SATUS.DELIVERED
+                        ReadReceipt: {
+                            every: {
+                                User: {
+                                    every: {
+                                        email: user
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -181,7 +188,7 @@ export function getGroup(request: Request, response: Response) {
                 Request: {
                     where: {
                         user: {
-                            email: user.email // Assuming user.email holds the email value
+                            email: user // Assuming user.email holds the email value
                         }
                     },
                     select: {
@@ -198,9 +205,8 @@ export function getGroup(request: Request, response: Response) {
             }
         })
             .then((result: any) => {
-            console.log(result)
-            responseHandler(200, response, {data: result})
-        })
+                responseHandler(200, response, {data: result})
+            })
             .catch((reason: any) => {
                 console.log(reason)
                 responseHandler(503, response, {message: 'Please try again later'});
@@ -325,6 +331,7 @@ export function updateGroup(request: Request, response: Response) {
     }
 }
 
+
 export function messages(request: Request, response: Response) {
     try {
         let {email} = request.body.user;
@@ -358,13 +365,25 @@ export function messages(request: Request, response: Response) {
                 User: {
                     select: {
                         name: true,
+                        email: true,
                         profileImage: true,
                         id: true
                     }
+                },
+                ReadReceipt: {
+                    where: {
+                        status: {
+                            not: "Read"
+                        }
+                    },
+                    include: {
+                        User: true
+                    }
+
                 }
             }
         }).then((result: any) => {
-            responseHandler(200, response, {data: result});
+            responseHandler(200, response, {data: result})
         }).catch((error: any) => {
             console.log(error);
             responseHandler(503, response, {message: "Please try again later"})
@@ -382,7 +401,6 @@ export function addUserToGroup(request: Request, response: Response) {
             .then((res: any) => {
                 config._query.user.findFirst({where: {email: res.invitee}})
                     .then((result: any) => {
-                        console.log(res)
                         if (res) {
                             config._query.group.update({
                                 where: {id: res.groupId},
@@ -400,7 +418,6 @@ export function addUserToGroup(request: Request, response: Response) {
                                                 }
                                             })
                                                 .then((res: any) => {
-                                                    console.log(res)
                                                     responseHandler(200, response, {});
                                                 })
                                                 .catch((error: any) => {
@@ -498,14 +515,14 @@ export function createRequest(request: Request, response: Response) {
 
             config._query.group.findFirst({where: {User: {some: {email: requestee}}, id: groupId}})
                 .then((result: any) => {
-                    console.log(result)
+
                     if (!result) {
                         config._query.user.findFirst({
                             where: {email: requester, Group: {some: {id: groupId}}},
                             include: {Group: true}
                         })
                             .then((result: any) => {
-                                console.log(result)
+
                                 // if (!result) {
                                 //     return responseHandler(403, response, {message: "Suspecious!!!"});
                                 // }
@@ -734,6 +751,7 @@ export function updateRequestStatus(request: Request, response: Response) {
                 responseHandler(200, response, {message: "Invitation rejected"})
             })
             .catch((error: any) => {
+                console.log(error)
                 responseHandler(403, response, {message: "Please try again later"})
             })
     } catch (e) {
@@ -745,7 +763,7 @@ export function getGroupByName(request: Request, response: Response) {
     try {
         let searchString = request.body.search;
 
-        config._query.group.findMany({where: {name: {contains: searchString}}, include: {GroupDetail: true}})
+        config._query.group.findMany({where: {name: {contains: searchString},User:{none:{email:request.body.user.email}}}, include: {GroupDetail: true}})
             .then((result: any) => {
                 responseHandler(200, response, {data: result});
             })

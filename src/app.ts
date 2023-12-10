@@ -6,6 +6,9 @@ import cors from 'cors';
 import {v2 as cloudinary} from 'cloudinary';
 
 const app = server()
+app.use(server.json({limit: '50mb'}));
+app.use(server.urlencoded({limit: '50mb'}));
+
 app.use(cors())
 app.use(server.json());
 dotenv.config();
