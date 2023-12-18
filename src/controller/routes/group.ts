@@ -173,11 +173,11 @@ export function getGroup(request: Request, response: Response) {
                 Socket: true,
                 User: {
                     select: {
-                        id:true,
+                        id: true,
                         name: true,
                         email: true,
                         profileImage: true,
-                        ActivityStatus:true
+                        ActivityStatus: true
                     }
                 },
                 Request: {
@@ -380,7 +380,7 @@ export function messages(request: Request, response: Response) {
                             id: item.id,
                             userId: request.body.user.user_id
                         }
-                    }).then(()=>{
+                    }).then(() => {
                     })
                 }
             })
@@ -766,7 +766,26 @@ export function getGroupByName(request: Request, response: Response) {
     try {
         let searchString = request.body.search;
         // make this better  like search for groups and related things in group keywords.
-        config._query.group.findMany({where: {name: {contains: searchString}}, include: {GroupDetail: true}})
+        config._query.group.findMany({
+            where: {
+                User: {
+                    none: {
+                        email: request.body.user.email
+                    }
+                },
+                name: {contains: searchString, mode: 'insensitive'},
+                GroupDetail: {
+                    description:
+                        {contains: searchString, mode: 'insensitive'},
+                    NOT: {
+                        tags: {
+                            has: 'PRIVATE'
+                        }
+                    }
+                }
+            },
+            include: {GroupDetail: true}
+        })
             .then((result: any) => {
                 responseHandler(200, response, {data: result});
             })
