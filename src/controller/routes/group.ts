@@ -3,11 +3,12 @@ import {responseHandler} from "../../utils/response-handler";
 import {config} from "../../utils/appConfig";
 import {groupReqInt} from "../../utils/interface";
 import {hasher} from "../../utils/methods";
-import {Group, MESSAGE_SATUS, RequestType, User} from "@prisma/client";
+import {Group, Joining, MESSAGE_SATUS, RequestType, User} from "@prisma/client";
 import {sendEmail} from "../../utils/mailer";
 import {imageUpload, isValidEmail} from "../../utils/common";
 import {v4 as uuidv4} from 'uuid';
 import group from "../../routes/group";
+import groupRouter from "../../routes/group";
 
 export function addGroupController(request: Request, response: Response) {
     try {
@@ -120,28 +121,36 @@ export function getAllGroups(request: Request, response: Response) {
             },
             orderBy: {
                 created_at: 'asc'
+
             },
             include: {
                 GroupDetail: true,
-                User: true,
                 Socket: true,
-                Message: {
-                    where: {
-                        status: MESSAGE_SATUS.DELIVERED
-                    }
+                Message:{
+                    take:1,
+                   include:{
+                        User:true,
+                       MessageContent:true,
+                       ReadReceipt:{
+                            where:{
+                                userId:request.body.user.user_id,
+                            }
+                       }
+                   }
                 }
             }
 
-        }).then((result: any) => {
-            responseHandler(200, response, {data: result})
+        }).then(async (result: any) => {
+            responseHandler(200,response,{data:result})
+        }).catch((reason: any) => {
+            console.log(reason)
+            return responseHandler(503, response, {message: 'Please try again later'});
+
         })
-            .catch((reason: any) => {
-                console.log(reason)
-                responseHandler(503, response, {message: 'Please try again later'});
-            })
-    } catch (reason: any) {
-        console.log(reason);
-        responseHandler(503, response, {message: "Please try again after sometime"})
+
+    } catch
+        (reason: any) {
+        return responseHandler(503, response, {message: "Please try again after sometime"})
     }
 }
 
@@ -334,62 +343,71 @@ export function messages(request: Request, response: Response) {
         const startDate = new Date(start);
         let group: string | number = request.params.groupId;
         group = Number(group);
-        config._query.message.findMany({
+        config._query.joining.findFirst({
             where: {
-                Group: {
-                    is: {
-                        id: group,
-                        User: {
-                            some: {
-                                email
+                userId: request.body.user.user_id,
+                groupId: group
+            }
+        }).then(result => {
+            config._query.message.findMany({
+                where: {
+                    Group: {
+                        is: {
+                            id: group,
+                            User: {
+                                some: {
+                                    email
+                                }
                             }
                         }
-                    }
+                    },
+                    created_at: {
+                        lt: startDate,
+                        gt: result?.timestamp
+                    },
                 },
-                created_at: {
-                    lt: startDate
-                }
-            },
-            take: limit,
-            orderBy: {
-                created_at: 'desc'
-            },
-            include: {
-                ReadReceipt: true,
-                MessageContent: true,
-                User: {
-                    select: {
-                        name: true,
-                        profileImage: true,
-                        id: true
-                    }
+                take: limit,
+                orderBy: {
+                    created_at: 'desc'
                 },
-            }
-        }).then((result: any) => {
-            let reads: any[] = [];
-            result.forEach((item: { ReadReceipt: any; }) => {
-                item.ReadReceipt.map((item: any) => {
-                    reads.push(item);
-                })
-            });
-            reads.forEach((item) => {
-                if (item.userId === request.body.user.id) {
-                    config._query.readReceipt.update({
-                        data: {status: 'Read'},
-                        where: {
-                            id: item.id,
-                            userId: request.body.user.user_id
+                include: {
+                    ReadReceipt: true,
+                    MessageContent: true,
+                    User: {
+                        select: {
+                            name: true,
+                            profileImage: true,
+                            id: true
                         }
-                    }).then(() => {
-                    })
+                    },
                 }
-            })
-            responseHandler(200, response, {data: result});
+            }).then((result: any) => {
+                let reads: any[] = [];
+                result.forEach((item: { ReadReceipt: any; }) => {
+                    item.ReadReceipt.map((item: any) => {
+                        reads.push(item);
+                    })
+                });
+                reads.forEach((item) => {
+                    if (item.userId === request.body.user.id) {
+                        config._query.readReceipt.update({
+                            data: {status: 'Read'},
+                            where: {
+                                id: item.id,
+                                userId: request.body.user.user_id
+                            }
+                        }).then(() => {
+                        })
+                    }
+                })
+                responseHandler(200, response, {data: result});
 
-        }).catch((error: any) => {
-            console.log(error);
-            responseHandler(503, response, {message: "Please try again later"})
+            }).catch((error: any) => {
+                console.log(error);
+                responseHandler(503, response, {message: "Please try again later"})
+            })
         })
+
     } catch (e) {
         console.log(e);
         responseHandler(503, response, {message: "Please try again later"})
@@ -401,56 +419,68 @@ export function addUserToGroup(request: Request, response: Response) {
         const requestId: string = request.params.id;
         config._query.request.findFirst({where: {id: requestId}})
             .then((res: any) => {
-                config._query.user.findFirst({where: {email: res.invitee}})
-                    .then((result: any) => {
-                        console.log(res)
-                        if (res) {
-                            config._query.group.update({
-                                where: {id: res.groupId},
-                                data: {User: {connect: result}},
-                                include: {User: true}
-                            })
-                                .then((groupUpdate: any) => {
-                                    config._query.request.delete({where: {id: res.id}})
-                                        .then(() => {
-                                            config._query.role.create({
-                                                data: {
+                if (res) {
+                    config._query.user.findFirst({where: {email: res.invitee}})
+                        .then((result: any) => {
+                            console.log(res)
+                            if (res) {
+                                config._query.group.update({
+                                    where: {id: res.groupId},
+                                    data: {User: {connect: result}},
+                                    include: {User: true}
+                                })
+                                    .then((groupUpdate: any) => {
+                                        config._query.request.delete({where: {id: res.id}})
+                                            .then(() => {
+                                                config._query.role.create({
+                                                    data: {
 
-                                                    userId: result.id,
-                                                    groupId: groupUpdate.id
-                                                }
+                                                        userId: result.id,
+                                                        groupId: groupUpdate.id
+                                                    }
+                                                })
+                                                    .then((res: any) => {
+                                                        config._query.joining.create({
+                                                            data: {
+                                                                timestamp: new Date(),
+                                                                userId: result.id,
+                                                                groupId: groupUpdate.id
+                                                            }
+                                                        }).then(() => {
+                                                            responseHandler(200, response, {});
+                                                        })
+                                                    })
+                                                    .catch((error: any) => {
+                                                        console.log(error)
+                                                    })
                                             })
-                                                .then((res: any) => {
-                                                    console.log(res)
-                                                    responseHandler(200, response, {});
-                                                })
-                                                .catch((error: any) => {
-                                                    console.log(error)
-                                                })
-                                        })
-                                })
-                                .catch((error: any) => {
-                                    console.log(error)
-                                    responseHandler(200, response, {});
-                                })
-                                .catch((error: any) => {
-                                    console.log(error)
-                                })
-                                .catch((error: any) => {
-                                    console.log(error)
-                                })
-                                .catch((error: any) => {
-                                    console.log(error)
-                                })
-                        } else {
+                                    })
+                                    .catch((error: any) => {
+                                        console.log(error)
+                                        responseHandler(200, response, {});
+                                    })
+                                    .catch((error: any) => {
+                                        console.log(error)
+                                    })
+                                    .catch((error: any) => {
+                                        console.log(error)
+                                    })
+                                    .catch((error: any) => {
+                                        console.log(error)
+                                    })
+                            } else {
 
-                            responseHandler(200, response, {data: {}});
-                        }
-                    })
-                    .catch((e: any) => {
-                        console.log(e);
-                        responseHandler(200, response, {});
-                    })
+                                responseHandler(200, response, {data: {}});
+                            }
+                        })
+
+                        .catch((e: any) => {
+                            console.log(e);
+                            responseHandler(200, response, {});
+                        })
+                } else {
+                    responseHandler(200, response, {});
+                }
 
             })
 
@@ -466,6 +496,7 @@ export function GroupMembers(request: Request, response: Response) {
         let groupId: string = request.params.id;
 
         config._query.group.findUnique({
+
             where: {
                 id: Number(groupId)
             },
@@ -478,11 +509,19 @@ export function GroupMembers(request: Request, response: Response) {
                         name: true,
                         Role: {
                             where: {
+                                userId: request.body.user.user_id,
                                 groupId: Number(groupId)
                             }
                         },
+                        Joining: {
+                            where: {
+                                userId: request.body.user.user_id,
+                                groupId: Number(groupId)
+                            }
+                        }
                     }
                 },
+
 
             }
         }).then((data: any) => {
@@ -526,10 +565,7 @@ export function createRequest(request: Request, response: Response) {
                             include: {Group: true}
                         })
                             .then((result: any) => {
-                                console.log(result)
-                                // if (!result) {
-                                //     return responseHandler(403, response, {message: "Suspecious!!!"});
-                                // }
+
                                 config._query.request.findFirst({
                                     where: {
                                         invitee: requestee,
@@ -729,8 +765,28 @@ export function removeUserFromGroup(request: Request, response: Response) {
                         }
                     }
                 })
-                    .then((result: any) => {
-                        responseHandler(200, response, {message: "Success"})
+                    .then((res: any) => {
+
+                        config._query.joining.findFirst({
+                            where: {
+                                userId: result.id,
+                                groupId: groupId
+                            }
+                        }).then(re => {
+                            if (re) {
+                                config._query.joining.delete({
+                                    where: {
+                                        id: re.id
+                                    }
+                                }).then(() => {
+                                    responseHandler(200, response, {message: "Success"})
+                                })
+                            } else {
+                                responseHandler(200, response, {message: "Success"})
+                            }
+
+                        })
+
                     })
                     .catch((error: any) => {
                         responseHandler(304, response, {message: "Please try again later"})
@@ -765,13 +821,24 @@ export function updateRequestStatus(request: Request, response: Response) {
 export function getGroupByName(request: Request, response: Response) {
     try {
         let searchString = request.body.search;
-        // make this better  like search for groups and related things in group keywords.
         config._query.group.findMany({
             where: {
                 User: {
                     none: {
                         email: request.body.user.email
+                    },
+                },
+                Request: {
+                    every: {
+                        group: {
+                            isNot: {
+                                name: {
+                                    contains: searchString, mode: 'insensitive'
+                                }
+                            }
+                        }
                     }
+
                 },
                 name: {contains: searchString, mode: 'insensitive'},
                 GroupDetail: {
@@ -782,7 +849,8 @@ export function getGroupByName(request: Request, response: Response) {
                             has: 'PRIVATE'
                         }
                     }
-                }
+                },
+
             },
             include: {GroupDetail: true}
         })
