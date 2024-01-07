@@ -11,7 +11,6 @@ export function verifyClient(request:Request,response:Response,next:NextFunction
         }
         if (token) {
             hasher._verify(token).then((response: any) => {
-                console.log(response)
                 request.body.user = {
                     user_id:response.user_id,
                     email: response.data

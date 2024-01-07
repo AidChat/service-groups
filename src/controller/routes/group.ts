@@ -3,12 +3,10 @@ import {responseHandler} from "../../utils/response-handler";
 import {config} from "../../utils/appConfig";
 import {groupReqInt} from "../../utils/interface";
 import {hasher} from "../../utils/methods";
-import {Group, Joining, MESSAGE_SATUS, RequestType, User} from "@prisma/client";
+import {Group, RequestType, User} from "@prisma/client";
 import {sendEmail} from "../../utils/mailer";
 import {imageUpload, isValidEmail} from "../../utils/common";
 import {v4 as uuidv4} from 'uuid';
-import group from "../../routes/group";
-import groupRouter from "../../routes/group";
 
 export function addGroupController(request: Request, response: Response) {
     try {
@@ -121,21 +119,23 @@ export function getAllGroups(request: Request, response: Response) {
             },
             orderBy: {
                 created_at: 'asc'
-
             },
             include: {
                 GroupDetail: true,
                 Socket: true,
                 Message:{
-                    take:1,
-                   include:{
-                        User:true,
-                       MessageContent:true,
-                       ReadReceipt:{
-                            where:{
-                                userId:request.body.user.user_id,
+                    take: 1,
+                    orderBy: {
+                       created_at : 'desc'
+                    },
+                    include: {
+                        User: true,
+                        MessageContent: true,
+                        ReadReceipt: {
+                            where: {
+                                userId: request.body.user.user_id,
                             }
-                       }
+                        }
                    }
                 }
             }
@@ -173,7 +173,7 @@ export function getGroup(request: Request, response: Response) {
                 id: gId,
                 User: {
                     some: {
-                        email: user.email // Assuming user.email holds the email value
+                        email: user.email
                     }
                 }
             },
@@ -192,7 +192,7 @@ export function getGroup(request: Request, response: Response) {
                 Request: {
                     where: {
                         user: {
-                            email: user.email // Assuming user.email holds the email value
+                            email: user.email
                         }
                     },
                     select: {
@@ -202,7 +202,7 @@ export function getGroup(request: Request, response: Response) {
                 Role: {
                     where: {
                         user: {
-                            email: user.email // Assuming user.email holds the email value
+                            email: user.email
                         }
                     }
                 }
@@ -388,8 +388,9 @@ export function messages(request: Request, response: Response) {
                         reads.push(item);
                     })
                 });
+                console.log(result)
                 reads.forEach((item) => {
-                    if (item.userId === request.body.user.id) {
+                    if (item.userId === request.body.user.user_id) {
                         config._query.readReceipt.update({
                             data: {status: 'Read'},
                             where: {
