@@ -448,7 +448,7 @@ export function GroupMembers(request: Request, response: Response) {
                 User: {
                     select: {
                         id: true, email: true, password: false, name: true, Role: {
-                            where:{
+                            where: {
                                 groupId,
                             },
                         }, Joining: {
@@ -741,27 +741,41 @@ export function updateRequestStatus(request: Request, response: Response) {
     }
 }
 
-export function getGroupByName(request: Request, response: Response) {
+export function search(request: Request, response: Response) {
     try {
         let searchString = request.body.search;
+        let finalGroups : Group[] = [];
         config._query.group.findMany({
             where: {
                 User: {
                     none: {
                         email: request.body.user.email
                     },
-                }, name: {contains: searchString, mode: 'insensitive'}, GroupDetail: {
+                }, GroupDetail: {
                     description: {contains: searchString, mode: 'insensitive'}, NOT: {
-                        tags: {
-                            has: 'PRIVATE'
-                        }
-                    }
+                        tags: {has: 'PRIVATE'}
+                    },
                 },
 
             }, include: {GroupDetail: true}
         })
             .then((result: any) => {
-                responseHandler(200, response, {data: result});
+                finalGroups = [...result];
+                config._query.group.findMany({
+                    where: {
+                        User: {
+                            none: {
+                                email: request.body.user.email
+                            },
+                        },
+                        name:{
+                            contains:searchString,mode:'insensitive'
+                        }
+                    }, include: {GroupDetail: true}
+                }).then(function(finalResponse){
+                    finalGroups = [...finalGroups,...finalResponse]
+                    responseHandler(200,response,{data:finalGroups})
+                })
             })
     } catch (e) {
         responseHandler(503, response, {message: "Please try again later."})

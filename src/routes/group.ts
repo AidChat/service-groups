@@ -17,7 +17,7 @@ import {
     getRole,
     removeUserFromGroup,
     getRequestByUser,
-    updateRequestStatus, getGroupByName
+    updateRequestStatus, search
 } from "../controller/routes/group";
 
 const groupRouter = route.Router();
@@ -27,7 +27,7 @@ groupRouter.route('/requests')
     .get(verifyClient, getRequestByUser)
 
 groupRouter.route('/search')
-    .post(verifyClient,getGroupByName)
+    .post(verifyClient,search)
 
 
 groupRouter.route('/messages/:groupId')
