@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "@emailjs/nodejs": "^2.2.0",
-    "@prisma/client": "^5.3.1",
+    "@prisma/client": "^5.8.1",
     "@types/node": "^20.6.2",
     "body-parser": "^1.20.2",
     "cloudinary": "^1.41.0",
@@ -27,7 +27,7 @@
   "scripts": {
     "build": "npx tsc",
     "start": "node dist/app.js",
-    "dev": "nodemon src/app.ts"
+    "dev": "npx prisma db pull && nodemon src/app.ts"
   },
   "author": "",
   "license": "ISC",

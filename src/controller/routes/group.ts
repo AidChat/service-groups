@@ -32,34 +32,25 @@ export function addGroupController(request: Request, response: Response) {
                 }
                 config._query.group.create({
                     data: {
-                        name: group.name,
-                        User: {
+                        name: group.name, User: {
                             connect: {
                                 id: user.id
                             },
-                        },
-                        Role: {
+                        }, Role: {
                             create: {
-                                type: 'OWNER',
-                                userId: user.id,
+                                type: 'OWNER', userId: user.id,
                             }
-                        },
-                        GroupDetail: {
+                        }, GroupDetail: {
                             create: {
-                                description: group.description,
-                                tags: group.keywords,
-                                icon: i
+                                description: group.description, tags: group.keywords, icon: i
                             }
-                        },
-                        Socket: {
+                        }, Socket: {
                             create: {
                                 socket_id: socketId
                             }
                         }
-                    },
-                    include: {
-                        GroupDetail: true,
-                        Socket: true
+                    }, include: {
+                        GroupDetail: true, Socket: true
                     }
                 }).then((result: any) => {
 
@@ -116,40 +107,31 @@ export function getAllGroups(request: Request, response: Response) {
                         email: user
                     }
                 }
-            },
-            orderBy: {
+            }, orderBy: {
                 created_at: 'asc'
-            },
-            include: {
-                GroupDetail: true,
-                Socket: true,
-                Message:{
-                    take: 1,
-                    orderBy: {
-                       created_at : 'desc'
-                    },
-                    include: {
-                        User: true,
-                        MessageContent: true,
-                        ReadReceipt: {
+            }, include: {
+                GroupDetail: true, Socket: true, Message: {
+                    take: 1, orderBy: {
+                        created_at: 'desc'
+                    }, include: {
+                        User: true, MessageContent: true, ReadReceipt: {
                             where: {
                                 userId: request.body.user.user_id,
                             }
                         }
-                   }
+                    }
                 }
             }
 
         }).then(async (result: any) => {
-            responseHandler(200,response,{data:result})
+            responseHandler(200, response, {data: result})
         }).catch((reason: any) => {
             console.log(reason)
             return responseHandler(503, response, {message: 'Please try again later'});
 
         })
 
-    } catch
-        (reason: any) {
+    } catch (reason: any) {
         return responseHandler(503, response, {message: "Please try again after sometime"})
     }
 }
@@ -170,36 +152,25 @@ export function getGroup(request: Request, response: Response) {
         }
         config._query.group.findUnique({
             where: {
-                id: gId,
-                User: {
+                id: gId, User: {
                     some: {
                         email: user.email
                     }
                 }
-            },
-            include: {
-                GroupDetail: true,
-                Socket: true,
-                User: {
+            }, include: {
+                GroupDetail: true, Socket: true, User: {
                     select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                        profileImage: true,
-                        ActivityStatus: true
+                        id: true, name: true, email: true, profileImage: true, ActivityStatus: true
                     }
-                },
-                Request: {
+                }, Request: {
                     where: {
                         user: {
                             email: user.email
                         }
-                    },
-                    select: {
+                    }, select: {
                         id: true
                     }
-                },
-                Role: {
+                }, Role: {
                     where: {
                         user: {
                             email: user.email
@@ -215,8 +186,7 @@ export function getGroup(request: Request, response: Response) {
                 console.log(reason)
                 responseHandler(503, response, {message: 'Please try again later'});
             })
-    } catch
-        (reason: any) {
+    } catch (reason: any) {
         console.log(reason);
         responseHandler(503, response, {message: "Please try again after sometime"})
     }
@@ -250,17 +220,12 @@ export function createGroupDeleteRequest(request: Request, response: Response) {
             .then((res: any) => {
                 config._query.request.create({
                     data: {
-                        id: id,
-                        type: "DELETE",
-                        invitee: '',
-                        group: {
+                        id: id, type: "DELETE", invitee: '', group: {
                             connect: {
                                 id: gid
                             }
-                        },
-                        user: {
-                            connect:
-                            res
+                        }, user: {
+                            connect: res
                         }
                     }
                 }).then(() => {
@@ -298,9 +263,7 @@ export function updateGroup(request: Request, response: Response) {
                 config._query.group.update({
                     where: {
                         id: gid
-                    },
-                    data: updatedData,
-                    include: {
+                    }, data: updatedData, include: {
                         GroupDetail: true
                     }
                 }).then((result: any) => {
@@ -317,9 +280,7 @@ export function updateGroup(request: Request, response: Response) {
             config._query.group.update({
                 where: {
                     id: gid
-                },
-                data: updatedData,
-                include: {
+                }, data: updatedData, include: {
                     GroupDetail: true
                 }
             }).then((result: any) => {
@@ -345,39 +306,28 @@ export function messages(request: Request, response: Response) {
         group = Number(group);
         config._query.joining.findFirst({
             where: {
-                userId: request.body.user.user_id,
-                groupId: group
+                userId: request.body.user.user_id, groupId: group
             }
         }).then(result => {
             config._query.message.findMany({
                 where: {
                     Group: {
                         is: {
-                            id: group,
-                            User: {
+                            id: group, User: {
                                 some: {
                                     email
                                 }
                             }
                         }
+                    }, created_at: {
+                        lt: startDate, gt: result?.timestamp
                     },
-                    created_at: {
-                        lt: startDate,
-                        gt: result?.timestamp
-                    },
-                },
-                take: limit,
-                orderBy: {
+                }, take: limit, orderBy: {
                     created_at: 'desc'
-                },
-                include: {
-                    ReadReceipt: true,
-                    MessageContent: true,
-                    User: {
+                }, include: {
+                    ReadReceipt: true, MessageContent: true, User: {
                         select: {
-                            name: true,
-                            profileImage: true,
-                            id: true
+                            name: true, profileImage: true, id: true
                         }
                     },
                 }
@@ -392,10 +342,8 @@ export function messages(request: Request, response: Response) {
                 reads.forEach((item) => {
                     if (item.userId === request.body.user.user_id) {
                         config._query.readReceipt.update({
-                            data: {status: 'Read'},
-                            where: {
-                                id: item.id,
-                                userId: request.body.user.user_id
+                            data: {status: 'Read'}, where: {
+                                id: item.id, userId: request.body.user.user_id
                             }
                         }).then(() => {
                         })
@@ -426,9 +374,7 @@ export function addUserToGroup(request: Request, response: Response) {
                             console.log(res)
                             if (res) {
                                 config._query.group.update({
-                                    where: {id: res.groupId},
-                                    data: {User: {connect: result}},
-                                    include: {User: true}
+                                    where: {id: res.groupId}, data: {User: {connect: result}}, include: {User: true}
                                 })
                                     .then((groupUpdate: any) => {
                                         config._query.request.delete({where: {id: res.id}})
@@ -436,8 +382,7 @@ export function addUserToGroup(request: Request, response: Response) {
                                                 config._query.role.create({
                                                     data: {
 
-                                                        userId: result.id,
-                                                        groupId: groupUpdate.id
+                                                        userId: result.id, groupId: groupUpdate.id
                                                     }
                                                 })
                                                     .then((res: any) => {
@@ -494,32 +439,23 @@ export function addUserToGroup(request: Request, response: Response) {
 
 export function GroupMembers(request: Request, response: Response) {
     try {
-        let groupId: string = request.params.id;
-
+        let groupId: Number = Number.parseInt(request.params.id);
         config._query.group.findUnique({
 
             where: {
                 id: Number(groupId)
-            },
-            include: {
+            }, include: {
                 User: {
                     select: {
-                        id: true,
-                        email: true,
-                        password: false,
-                        name: true,
-                        Role: {
+                        id: true, email: true, password: false, name: true, Role: {
+                            where:{
+                                groupId,
+                            },
+                        }, Joining: {
                             where: {
-                                userId: request.body.user.user_id,
-                                groupId: Number(groupId)
+                                userId: request.body.user.user_id, groupId: groupId
                             }
                         },
-                        Joining: {
-                            where: {
-                                userId: request.body.user.user_id,
-                                groupId: Number(groupId)
-                            }
-                        }
                     }
                 },
 
@@ -555,22 +491,17 @@ export function createRequest(request: Request, response: Response) {
         }
         let link = process.env.CLIENT_LOCAL + id;
         config._query.user.findFirst({where: {email: requester}}).then((user: User) => {
-
-
             config._query.group.findFirst({where: {User: {some: {email: requestee}}, id: groupId}})
                 .then((result: any) => {
-                    console.log(result)
                     if (!result) {
                         config._query.user.findFirst({
-                            where: {email: requester, Group: {some: {id: groupId}}},
-                            include: {Group: true}
+                            where: {email: requester, Group: {some: {id: groupId}}}, include: {Group: true}
                         })
                             .then((result: any) => {
 
                                 config._query.request.findFirst({
                                     where: {
-                                        invitee: requestee,
-                                        groupId: groupId
+                                        invitee: requestee, groupId: groupId
                                     }
                                 })
                                     .then((req: any) => {
@@ -590,25 +521,25 @@ export function createRequest(request: Request, response: Response) {
 
                                             if (allowed || reqType === 'MANUAL') {
                                                 const userId = user.id;
-
-                                                sendEmail({link, email: requestee}).then(() => {
-                                                    config._query.request.create({
-                                                        data: {
-                                                            id,
-                                                            groupId,
-                                                            userId,
-                                                            type: reqType,
-                                                            invitee: requestee,
-                                                            role: role
-                                                        }
-                                                    })
-                                                        .then((result: any) => {
-                                                            responseHandler(200, response, {
-                                                                data: result,
-                                                                message: result.invitee + " has been requested to join your group"
-                                                            });
-                                                        })
+                                                config._query.request.create({
+                                                    data: {
+                                                        id,
+                                                        groupId,
+                                                        userId,
+                                                        type: reqType,
+                                                        invitee: requestee,
+                                                        role: role
+                                                    }
                                                 })
+                                                    .then((result: any) => {
+                                                        responseHandler(200, response, {
+                                                            data: result,
+                                                            message: reqType !== 'MANUAL' ? requestee + " has been requested to join your group" : "Group join request has been created."
+                                                        });
+                                                    }).then(function () {
+                                                    if (reqType !== 'MANUAL') sendEmail({link, email: requestee})
+                                                })
+
                                                     .catch((reason) => {
                                                         console.log(reason);
                                                         responseHandler(301, response, {message: "Failed to create request"});
@@ -628,7 +559,7 @@ export function createRequest(request: Request, response: Response) {
 
 
                     } else {
-                        responseHandler(200, response, {message: "User already exists!"})
+                        responseHandler(200, response, {message: "User already part of the community!"})
                     }
                 })
         })
@@ -659,25 +590,19 @@ export function getAllRequests(request: Request, response: Response) {
 
 export function removeRequest(request: Request, response: Response) {
     try {
-        const requestId: string = request.params.id;
-        const email = request.body.user.email;
-        config._query.user.findUnique({where: {email: email}})
+        const requestId: string = request.params.requestId;
+        config._query.request.findFirst({where: {id: requestId, userId: request.body.user.id}})
             .then((result: any) => {
                 if (result) {
-                    config._query.request.findFirst({where: {id: requestId, userId: result.id}})
-                        .then((result: any) => {
-                            if (result) {
-                                config._query.request.delete({where: {id: result.id}}).then((result: any) => {
-                                    responseHandler(200, response, {message: "Request removed"});
-                                })
-                            } else {
-                                responseHandler(200, response, {message: "Request not found"})
-                            }
-                        })
+                    config._query.request.delete({where: {id: result.id}}).then((result: any) => {
+                        responseHandler(200, response, {message: "Request removed"});
+                    })
+                } else {
+                    responseHandler(200, response, {message: "Request not found"})
                 }
             })
-    } catch
-        (e) {
+
+    } catch (e) {
         responseHandler(503, response, {message: "Please try again"})
     }
 }
@@ -689,8 +614,7 @@ export function getRequest(request: Request, response: Response) {
             responseHandler(404, response, {message: "Request not found"});
         } else {
             config._query.request.findFirst({
-                where: {id: requestId},
-                include: {group: {include: {GroupDetail: true}}, user: {select: {name: true}}}
+                where: {id: requestId}, include: {group: {include: {GroupDetail: true}}, user: {select: {name: true}}}
             })
                 .then((result: any) => {
                     responseHandler(200, response, {data: result});
@@ -757,8 +681,7 @@ export function removeUserFromGroup(request: Request, response: Response) {
         config._query.user.findFirst({where: {email: userEmail}})
             .then((result: any) => {
                 config._query.group.update({
-                    where: {id: groupId},
-                    data: {
+                    where: {id: groupId}, data: {
                         User: {
                             disconnect: {
                                 id: result.id
@@ -770,8 +693,7 @@ export function removeUserFromGroup(request: Request, response: Response) {
 
                         config._query.joining.findFirst({
                             where: {
-                                userId: result.id,
-                                groupId: groupId
+                                userId: result.id, groupId: groupId
                             }
                         }).then(re => {
                             if (re) {
@@ -804,7 +726,7 @@ export function removeUserFromGroup(request: Request, response: Response) {
 
 export function updateRequestStatus(request: Request, response: Response) {
     try {
-        let requestId = request.params.id;
+        let requestId = request.params.requestId;
         let userEmail = request.body.user.email;
         let {status} = request.body;
         config._query.request.update({where: {id: requestId, invitee: userEmail}, data: {status: status}})
@@ -828,32 +750,15 @@ export function getGroupByName(request: Request, response: Response) {
                     none: {
                         email: request.body.user.email
                     },
-                },
-                Request: {
-                    every: {
-                        group: {
-                            isNot: {
-                                name: {
-                                    contains: searchString, mode: 'insensitive'
-                                }
-                            }
-                        }
-                    }
-
-                },
-                name: {contains: searchString, mode: 'insensitive'},
-                GroupDetail: {
-                    description:
-                        {contains: searchString, mode: 'insensitive'},
-                    NOT: {
+                }, name: {contains: searchString, mode: 'insensitive'}, GroupDetail: {
+                    description: {contains: searchString, mode: 'insensitive'}, NOT: {
                         tags: {
                             has: 'PRIVATE'
                         }
                     }
                 },
 
-            },
-            include: {GroupDetail: true}
+            }, include: {GroupDetail: true}
         })
             .then((result: any) => {
                 responseHandler(200, response, {data: result});

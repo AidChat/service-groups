@@ -41,7 +41,7 @@ groupRouter.route('/invite/:groupId')
     .post(verifyClient, createRequest)
     .get(verifyClient, getAllRequests)
 
-groupRouter.route('/invite/update/:id')
+groupRouter.route('/invite/:requestId')
     .delete(verifyClient, removeRequest)
     .put(verifyClient,updateRequestStatus)
 
@@ -55,7 +55,7 @@ groupRouter.route('/role/:id')
 groupRouter.route('/remove/:id')
     .put(verifyClient, removeUserFromGroup)
 
-groupRouter.route('/GET/:id')
+groupRouter.route('/:id')
     .get(verifyClient, getGroup)
     .delete(verifyClient, deleteGroup)
     .put(verifyClient, updateGroup)

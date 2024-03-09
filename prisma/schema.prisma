@@ -54,6 +54,7 @@ model User {
   sessionId      Int?
   profileImage   String          @default("")
   readReceiptId  Int?
+  Type           UserType        @default(Pending)
   ActivityStatus ActivityStatus?
   Joining        Joining[]
   Message        Message[]
@@ -276,4 +277,10 @@ enum UserActivity {
   BANNED
   LEAVE
   AWAY
+}
+
+enum UserType {
+  Seeker
+  Helper
+  Pending
 }
