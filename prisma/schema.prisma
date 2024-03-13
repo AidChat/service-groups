@@ -55,6 +55,8 @@ model User {
   profileImage   String          @default("")
   readReceiptId  Int?
   Type           UserType        @default(Pending)
+  about          String?
+  mobile         Int             @default(0)
   ActivityStatus ActivityStatus?
   Joining        Joining[]
   Message        Message[]
