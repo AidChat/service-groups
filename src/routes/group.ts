@@ -1,7 +1,7 @@
 import route from 'express';
 import {verifyClient} from "../middleware/client-validation";
 import {
-    addGroupController,
+    addGroup,
     addUserToGroup,
     createRequest,
     deleteGroup,
@@ -19,9 +19,27 @@ import {
     getRequestByUser,
     updateRequestStatus, search
 } from "../controller/routes/group";
+import {
+    addReminder,
+    blockReminder,
+    getReminderByGroup,
+    getReminderById,
+    removeReminder
+} from "../controller/routes/reminder";
 
 const groupRouter = route.Router();
 
+
+groupRouter.route('/reminder/:reminderId')
+    .delete(verifyClient,removeReminder)
+    .get(verifyClient,getReminderById)
+
+groupRouter.route('/reminders/:groupId')
+    .get(verifyClient,getReminderByGroup)
+    .post(verifyClient,addReminder)
+
+groupRouter.route('/restrictReminder/:reminderId')
+    .put(verifyClient,blockReminder)
 
 groupRouter.route('/requests')
     .get(verifyClient, getRequestByUser)
@@ -62,7 +80,9 @@ groupRouter.route('/:id')
     .post(verifyClient, createGroupDeleteRequest)
 
 groupRouter.route('/')
-    .post(verifyClient, addGroupController)
+    .post(verifyClient, addGroup)
     .get(verifyClient, getAllGroups)
+
+
 
 export default groupRouter

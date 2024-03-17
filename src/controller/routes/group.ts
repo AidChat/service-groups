@@ -8,7 +8,7 @@ import {sendEmail} from "../../utils/mailer";
 import {imageUpload, isValidEmail} from "../../utils/common";
 import {v4 as uuidv4} from 'uuid';
 
-export function addGroupController(request: Request, response: Response) {
+export function addGroup(request: Request, response: Response) {
     try {
         let {email} = request.body.user;
         let {requestee} = request.body;
@@ -773,7 +773,7 @@ export function search(request: Request, response: Response) {
                         }
                     }, include: {GroupDetail: true}
                 }).then(function(finalResponse){
-                    finalGroups = [...finalGroups,...finalResponse]
+                    finalGroups = [...finalGroups,...finalResponse];
                     responseHandler(200,response,{data:finalGroups})
                 })
             })

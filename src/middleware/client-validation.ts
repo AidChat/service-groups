@@ -13,7 +13,8 @@ export function verifyClient(request:Request,response:Response,next:NextFunction
             hasher._verify(token).then((response: any) => {
                 request.body.user = {
                     user_id:response.user_id,
-                    email: response.data
+                    email: response.data,
+                    id:response.user_id
                 }
                 next();
             })

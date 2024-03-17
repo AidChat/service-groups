@@ -19,6 +19,7 @@ model Group {
   Socket        Socket      @relation(fields: [socketId], references: [id])
   Joining       Joining[]
   Message       Message[]
+  Reminder      Reminder[]
   Request       Request[]
   Role          Role[]
   User          User[]      @relation("GroupToUser")
@@ -47,24 +48,27 @@ model Socket {
 }
 
 model User {
-  id             Int             @id @default(autoincrement())
-  email          String          @unique
-  name           String
-  password       String?
-  sessionId      Int?
-  profileImage   String          @default("")
-  readReceiptId  Int?
-  Type           UserType        @default(Pending)
-  about          String?
-  mobile         Int             @default(0)
-  ActivityStatus ActivityStatus?
-  Joining        Joining[]
-  Message        Message[]
-  ReadReceipt    ReadReceipt[]
-  Request        Request[]
-  Role           Role[]
-  Session        Session?
-  Group          Group[]         @relation("GroupToUser")
+  id                 Int              @id @default(autoincrement())
+  email              String           @unique
+  name               String
+  password           String?
+  sessionId          Int?
+  profileImage       String           @default("")
+  readReceiptId      Int?
+  Type               UserType         @default(Pending)
+  about              String?
+  mobile             String?
+  ReminderMembers_id Int?
+  ActivityStatus     ActivityStatus?
+  Joining            Joining[]
+  Message            Message[]
+  ReadReceipt        ReadReceipt[]
+  Reminder           Reminder[]
+  Request            Request[]
+  Role               Role[]
+  Session            Session?
+  ReminderMembers    ReminderMembers? @relation(fields: [ReminderMembers_id], references: [id])
+  Group              Group[]          @relation("GroupToUser")
 }
 
 model Role {
@@ -135,6 +139,41 @@ model ActivityStatus {
   userId Int          @unique
   date   DateTime     @default(now())
   User   User         @relation(fields: [userId], references: [id])
+}
+
+model Reminder {
+  id            Int              @id @default(autoincrement())
+  notifyBefore  Boolean          @default(false)
+  notifyApp     Boolean          @default(false)
+  notifyWeb     Boolean          @default(false)
+  message       String?
+  title         String
+  self          Boolean          @default(true)
+  groupId       Int
+  createdById   Int
+  when          DateTime
+  recurring     Boolean          @default(false)
+  recurringDays Days[]
+  createdBy     User             @relation(fields: [createdById], references: [id])
+  group         Group            @relation(fields: [groupId], references: [id])
+  participants  ReminderMembers?
+}
+
+model ReminderMembers {
+  id         Int      @id @default(autoincrement())
+  reminderId Int      @unique
+  Reminder   Reminder @relation(fields: [reminderId], references: [id])
+  users      User[]
+}
+
+enum Days {
+  SU
+  MO
+  TU
+  WE
+  TH
+  FR
+  SA
 }
 
 enum RequestStatus {
